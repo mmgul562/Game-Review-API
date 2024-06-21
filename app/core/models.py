@@ -5,7 +5,7 @@ from django.contrib.auth.models import (AbstractBaseUser,
 
 
 class UserManager(BaseUserManager):
-    def validate_and_create(self, email, username, password, **kwargs):
+    def validate_and_create(self, username, email, password, **kwargs):
         if not email or not username:
             raise ValueError('Email and username must be provided.')
         user = self.model(
@@ -16,13 +16,13 @@ class UserManager(BaseUserManager):
         user.set_password(password)
         return user
 
-    def create_user(self, email, username, password=None, **kwargs):
-        user = self.validate_and_create(email, username, password, **kwargs)
+    def create_user(self, username, email, password=None, **kwargs):
+        user = self.validate_and_create(username, email, password, **kwargs)
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, email, username, password):
-        user = self.validate_and_create(email, username, password)
+    def create_superuser(self, username, email, password):
+        user = self.validate_and_create(username, email, password)
         user.is_staff = True
         user.is_superuser = True
         user.save(using=self._db)
@@ -30,8 +30,8 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser, PermissionsMixin):
-    email = models.EmailField(max_length=255, unique=True)
     username = models.CharField(max_length=64, unique=True)
+    email = models.EmailField(max_length=255, unique=True)
     name = models.CharField(max_length=255, blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
