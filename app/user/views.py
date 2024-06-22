@@ -10,6 +10,7 @@ class CreateUserView(generics.CreateAPIView):
 
 
 class CreateAuthTokenView(ObtainAuthToken):
+    """Create an authentication token"""
     serializer_class = AuthTokenSerializer
     renderer_classes = api_settings.DEFAULT_RENDERER_CLASSES
 
