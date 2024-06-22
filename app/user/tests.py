@@ -73,7 +73,7 @@ class PublicUserApiTests(TestCase):
             "identifier": "test@example.com",
             "password": "example123"
         }
-        create_user()
+        create_user(email=payload["identifier"], password=payload["password"])
         res = self.client.post(TOKEN_URL, payload)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
@@ -84,7 +84,7 @@ class PublicUserApiTests(TestCase):
             "identifier": "example",
             "password": "example123"
         }
-        create_user()
+        create_user(username=payload["identifier"], password=payload["password"])
         res = self.client.post(TOKEN_URL, payload)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
@@ -95,7 +95,7 @@ class PublicUserApiTests(TestCase):
             "username": "example",
             "password": "incorrect"
         }
-        create_user()
+        create_user(username=payload["username"])
         res = self.client.post(TOKEN_URL, payload)
 
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
@@ -106,7 +106,7 @@ class PublicUserApiTests(TestCase):
             "username": "example",
             "password": ""
         }
-        create_user()
+        create_user(username=payload["username"])
         res = self.client.post(TOKEN_URL, payload)
 
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
