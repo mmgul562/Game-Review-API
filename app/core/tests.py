@@ -14,6 +14,15 @@ def create_user(username="example",
     )
 
 
+def create_superuser(username="example",
+                     email="test@example.com",
+                     password="example123",
+                     name="John Doe"):
+    return get_user_model().objects.create_superuser(
+        username, email, password, name=name
+    )
+
+
 class ModelTests(TestCase):
     def test_create_user(self):
         user = create_user()
@@ -22,6 +31,8 @@ class ModelTests(TestCase):
         self.assertEqual(user.name, "John Doe")
         self.assertNotEqual(user.password, "example123")
         self.assertTrue(user.check_password("example123"))
+        self.assertFalse(user.is_superuser)
+        self.assertFalse(user.is_staff)
 
     def test_create_user_with_duplicate_email(self):
         create_user("example", "duplicate@example.com")
@@ -40,11 +51,7 @@ class ModelTests(TestCase):
             create_user("example", "")
 
     def test_create_superuser(self):
-        user = get_user_model().objects.create_superuser(
-            "superuser",
-            "test@example.com",
-            "example123"
-        )
+        user = create_superuser()
         self.assertTrue(user.is_staff)
         self.assertTrue(user.is_superuser)
 

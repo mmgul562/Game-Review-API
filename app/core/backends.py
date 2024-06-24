@@ -4,10 +4,10 @@ from django.db.models import Q
 
 
 class UsernameOrEmailBackend(BaseBackend):
-    def authenticate(self, request, username=None, password=None, **kwargs):
+    def authenticate(self, request, identifier=None, password=None, **kwargs):
         User = get_user_model()
         try:
-            user = User.objects.get(Q(username=username) | Q(email=username))
+            user = User.objects.get(Q(username=identifier) | Q(email=identifier))
         except User.DoesNotExist:
             return None
 

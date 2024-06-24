@@ -6,7 +6,7 @@ from django.core.management.base import BaseCommand
 
 class Command(BaseCommand):
     def handle(self, *args, **kwargs):
-        self.stdout.write("-Waiting for the database to be ready-")
+        self.stdout.write("---Waiting for the database to be ready---")
         ready = False
         while not ready:
             try:
@@ -15,4 +15,4 @@ class Command(BaseCommand):
             except(PsyOpError, OperationalError):
                 time.sleep(1)
 
-        self.stdout.write("-Database available-")
+        self.stdout.write("---Database available---")
