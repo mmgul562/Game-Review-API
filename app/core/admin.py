@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.utils.translation import gettext_lazy as _
+
 from core import models
 
 
@@ -32,4 +33,16 @@ class UserAdmin(DjangoUserAdmin):
     )
 
 
+class GameAdmin(admin.ModelAdmin):
+    ordering = ['id', 'title']
+    list_display = ['title', 'developer', 'release_date']
+    fieldsets = (
+        (None, {'fields': (
+            'title', 'developer', 'release_date', 'duration',
+            'in_early_access', 'has_multiplayer'
+        )}),
+    )
+
+
 admin.site.register(models.User, UserAdmin)
+admin.site.register(models.Game, GameAdmin)

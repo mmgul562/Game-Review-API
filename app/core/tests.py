@@ -1,8 +1,11 @@
+from datetime import date
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from django.db.utils import IntegrityError
 from rest_framework import status
+
+from core import models
 
 
 def create_user(username="example",
@@ -20,6 +23,22 @@ def create_superuser(username="example",
                      name="John Doe"):
     return get_user_model().objects.create_superuser(
         username, email, password, name=name
+    )
+
+
+def create_game(title="Example title",
+                developer="Example developer",
+                duration=50,
+                release_date=date(2020, 1, 1),
+                in_early_access=False,
+                has_multiplayer=False):
+    return models.Game.objects.create(
+        title=title,
+        developer=developer,
+        duration=duration,
+        release_date=release_date,
+        in_early_access=in_early_access,
+        has_multiplayer=has_multiplayer
     )
 
 
@@ -54,6 +73,22 @@ class ModelTests(TestCase):
         user = create_superuser()
         self.assertTrue(user.is_staff)
         self.assertTrue(user.is_superuser)
+
+    def test_create_game_successful(self):
+        game = models.Game.objects.create(
+            title="Example game title",
+            developer="Example developer",
+            duration=40,
+            release_date=date(2000, 1, 1),
+            in_early_access=False,
+            has_multiplayer=False
+        )
+        self.assertEqual(str(game), game.title)
+        self.assertEqual(game.developer, "Example developer")
+        self.assertEqual(game.duration, 40)
+        self.assertEqual(game.release_date, date(2000, 1, 1))
+        self.assertFalse(game.in_early_access)
+        self.assertFalse(game.has_multiplayer)
 
 
 class AdminTests(TestCase):

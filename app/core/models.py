@@ -40,3 +40,18 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     REQUIRED_FIELDS = ['email']
     USERNAME_FIELD = 'username'
+
+
+class Game(models.Model):
+    title = models.CharField(max_length=255)
+    developer = models.CharField(max_length=255)
+    duration = models.PositiveSmallIntegerField(
+        null=True,
+        help_text="Average number of hours taken to finish the game."
+    )
+    release_date = models.DateField(null=True)
+    in_early_access = models.BooleanField(default=False)
+    has_multiplayer = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.title
