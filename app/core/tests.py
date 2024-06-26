@@ -1,4 +1,5 @@
 from datetime import date
+from decimal import Decimal
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth import get_user_model
@@ -108,6 +109,23 @@ class ModelTests(TestCase):
         self.assertEqual(game_req.release_date, date(2000, 1, 1))
         self.assertFalse(game_req.in_early_access)
         self.assertFalse(game_req.has_multiplayer)
+
+    def test_create_review_successful(self):
+        review = models.Review.objects.create(
+            user=create_user(),
+            game=create_game(),
+            title="Example review title",
+            body="Example review body",
+            rating=80,
+            hours_played=Decimal(10.5),
+            percent_finished=Decimal(58.4),
+            played_with_friends=True
+        )
+        self.assertEqual(str(review), f"{review.title} ({review.rating}/100)")
+        self.assertEqual(review.body, "Example review body")
+        self.assertEqual(review.hours_played, Decimal(10.5))
+        self.assertEqual(review.percent_finished, Decimal(58.4))
+        self.assertTrue(review.played_with_friends)
 
 
 class AdminTests(TestCase):

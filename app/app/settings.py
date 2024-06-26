@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     'core',
     'user',
     'game',
+    'review'
 ]
 
 MIDDLEWARE = [

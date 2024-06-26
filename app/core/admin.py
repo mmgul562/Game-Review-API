@@ -70,6 +70,18 @@ class GameRequestAdmin(admin.ModelAdmin):
     )
 
 
+class ReviewAdmin(admin.ModelAdmin):
+    ordering = ['id', 'game']
+    list_display = ['title', 'game', 'user']
+    fieldsets = (
+        (None, {'fields': (
+            'user', 'title', 'game', 'body', 'rating',
+            'hours_played', 'percent_finished', 'played_with_friends'
+        )}),
+    )
+
+
 admin.site.register(models.User, UserAdmin)
 admin.site.register(models.Game, GameAdmin)
 admin.site.register(models.GameRequest, GameRequestAdmin)
+admin.site.register(models.Review, ReviewAdmin)

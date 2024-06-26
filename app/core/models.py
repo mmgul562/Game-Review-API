@@ -1,4 +1,6 @@
+from decimal import Decimal
 from django.db import models
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.contrib.auth.models import (AbstractBaseUser,
                                         BaseUserManager,
                                         PermissionsMixin)
@@ -80,3 +82,38 @@ class GameRequest(models.Model):
 
     def __str__(self):
         return f"{self.title} request by {self.user}"
+
+
+class Review(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE
+    )
+    game = models.ForeignKey(
+        Game,
+        on_delete=models.CASCADE
+    )
+    title = models.CharField(max_length=255)
+    body = models.TextField()
+    rating = models.PositiveSmallIntegerField(
+        validators=[MaxValueValidator(100)]
+    )
+    hours_played = models.DecimalField(
+        default=Decimal(1.0),
+        max_digits=6,           # max 99 999.9
+        decimal_places=1,
+        validators=[MinValueValidator(Decimal(0.0))]
+    )
+    percent_finished = models.DecimalField(
+        null=True,
+        max_digits=4,
+        decimal_places=1,
+        validators=[
+            MaxValueValidator(Decimal(100.0)),
+            MinValueValidator(Decimal(0.0))
+        ])
+    # true/false for games with multiplayer, otherwise null
+    played_with_friends = models.BooleanField(null=True)
+
+    def __str__(self):
+        return f"{self.title} ({self.rating}/100)"
