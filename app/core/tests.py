@@ -17,8 +17,8 @@ def create_user(username="example",
     )
 
 
-def create_superuser(username="example",
-                     email="test@example.com",
+def create_superuser(username="super",
+                     email="super@example.com",
                      password="example123",
                      name="John Doe"):
     return get_user_model().objects.create_superuser(
@@ -89,6 +89,25 @@ class ModelTests(TestCase):
         self.assertEqual(game.release_date, date(2000, 1, 1))
         self.assertFalse(game.in_early_access)
         self.assertFalse(game.has_multiplayer)
+
+    def test_create_game_request_successful(self):
+        user = create_user()
+        game_req = models.GameRequest.objects.create(
+            user=user,
+            title="Example game title",
+            developer="Example developer",
+            duration=40,
+            release_date=date(2000, 1, 1),
+            in_early_access=False,
+            has_multiplayer=False,
+        )
+        self.assertEqual(str(game_req),
+                         f"{game_req.title} request by {game_req.user}")
+        self.assertEqual(game_req.developer, "Example developer")
+        self.assertEqual(game_req.duration, 40)
+        self.assertEqual(game_req.release_date, date(2000, 1, 1))
+        self.assertFalse(game_req.in_early_access)
+        self.assertFalse(game_req.has_multiplayer)
 
 
 class AdminTests(TestCase):

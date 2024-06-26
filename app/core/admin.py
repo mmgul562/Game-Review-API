@@ -44,5 +44,32 @@ class GameAdmin(admin.ModelAdmin):
     )
 
 
+class GameRequestAdmin(admin.ModelAdmin):
+    ordering = ['id', 'title']
+    list_display = ['title', 'user', 'created_at']
+    fieldsets = (
+        (None, {'fields': (
+            'user', 'created_at', 'rejected', 'feedback'
+        )}),
+        (_('Game Information'), {'fields': (
+            'title', 'developer', 'release_date', 'duration',
+            'in_early_access', 'has_multiplayer'
+        )})
+    )
+    readonly_fields = ['created_at']
+    add_fieldsets = (
+        (None, {'fields': (
+            'user',
+            'title',
+            'developer',
+            'release_date',
+            'duration',
+            'in_early_access',
+            'has_multiplayer'
+        ), }),
+    )
+
+
 admin.site.register(models.User, UserAdmin)
 admin.site.register(models.Game, GameAdmin)
+admin.site.register(models.GameRequest, GameRequestAdmin)

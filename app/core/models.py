@@ -3,6 +3,8 @@ from django.contrib.auth.models import (AbstractBaseUser,
                                         BaseUserManager,
                                         PermissionsMixin)
 
+from app import settings
+
 
 class UserManager(BaseUserManager):
     def validate_and_create(self, username, email, password, **kwargs):
@@ -55,3 +57,26 @@ class Game(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class GameRequest(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE
+    )
+    title = models.CharField(max_length=255)
+    developer = models.CharField(max_length=255)
+    duration = models.PositiveSmallIntegerField(
+        null=True,
+        help_text="Average number of hours taken to finish the game."
+    )
+    release_date = models.DateField(null=True)
+    in_early_access = models.BooleanField(default=False)
+    has_multiplayer = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    rejected = models.BooleanField(default=False)
+    # only used when request is rejected
+    feedback = models.TextField(max_length=1023, null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.title} request by {self.user}"

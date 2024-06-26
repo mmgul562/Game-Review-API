@@ -4,25 +4,56 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from core.models import Game
+from core.models import Game, GameRequest
 from core.tests import (create_user,
                         create_superuser,
                         create_game)
-from game.serializers import GameSerializer
-
+from game.serializers import GameSerializer, GameRequestSerializer
 
 GAMES_URL = reverse("game:game-list")
+REQ_URL = reverse("game:gamerequest-list")
 
 
 def game_url(game_id):
     return reverse("game:game-detail", args=[game_id])
 
 
-def exists(id=None, title=None):
+def req_url(req_id):
+    return reverse("game:gamerequest-detail", args=[req_id])
+
+
+def create_game_request(user,
+                        title="Example title",
+                        developer="Example developer",
+                        duration=50,
+                        release_date=date(2020, 1, 1),
+                        in_early_access=False,
+                        has_multiplayer=False,
+                        rejected=False,
+                        feedback=None):
+    return GameRequest.objects.create(
+        user=user,
+        title=title,
+        developer=developer,
+        duration=duration,
+        release_date=release_date,
+        in_early_access=in_early_access,
+        has_multiplayer=has_multiplayer,
+        rejected=rejected,
+        feedback=feedback
+    )
+
+
+def exists(req=False, id=None, title=None):
+    if not req:
+        if id:
+            return Game.objects.filter(id=id).exists()
+        elif title:
+            return Game.objects.filter(title=title).exists()
     if id:
-        return Game.objects.filter(id=id).exists()
+        return GameRequest.objects.filter(id=id).exists()
     elif title:
-        return Game.objects.filter(title=title).exists()
+        return GameRequest.objects.filter(title=title).exists()
     return False
 
 
@@ -202,3 +233,239 @@ class SuperUserGameApiTests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(exists(id=game.id))
+
+
+class PublicGameRequestApiTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = create_user()
+
+    def test_get_game_requests_list(self):
+        create_game_request(user=self.user)
+        create_game_request(user=self.user)
+        requests = GameRequest.objects.all()
+        serialized_requests = GameRequestSerializer(requests, many=True)
+        res = self.client.get(REQ_URL)
+
+        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertNotEqual(serialized_requests, res.data)
+
+    def test_get_game_request(self):
+        request = create_game_request(user=self.user)
+        serialized_request = GameRequestSerializer(request)
+        res = self.client.get(req_url(request.id))
+
+        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertNotEqual(serialized_request, res.data)
+
+    def test_create_game_request(self):
+        payload = {
+            "title": "Example title",
+            "developer": "Example developer",
+            "duration": 40,
+            "release_date": date(2020, 5, 5),
+            "in_early_access": False,
+            "has_multiplayer": True,
+        }
+        res = self.client.post(REQ_URL, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertFalse(exists(req=True, title=payload["title"]))
+
+    def test_update_game_request(self):
+        request = create_game_request(user=self.user)
+        payload = {
+            "title": "Updated title",
+            "developer": "Updated developer",
+            "duration": 90,
+            "release_date": date(2010, 2, 6),
+            "in_early_access": True,
+            "has_multiplayer": True,
+        }
+        res = self.client.put(req_url(request.id), payload)
+
+        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+        request.refresh_from_db()
+        for key, val in payload.items():
+            self.assertNotEqual(getattr(request, key), val)
+
+    def test_partial_update_game_request(self):
+        request = create_game_request(user=self.user)
+        payload = {"developer": "Updated developer"}
+        res = self.client.patch(req_url(request.id), payload)
+
+        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+        request.refresh_from_db()
+        self.assertNotEqual(request.developer, payload["developer"])
+
+    def test_delete_game_request(self):
+        request = create_game_request(user=self.user)
+        res = self.client.delete(req_url(request.id))
+
+        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertTrue(exists(req=True, id=request.id))
+
+
+class PrivateGameRequestApiTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = create_user()
+        self.client.force_authenticate(self.user)
+
+    def test_get_game_requests_list(self):
+        other_user = create_user(username="diff", email="diff@example.com")
+        create_game_request(user=self.user)
+        create_game_request(user=self.user)
+        create_game_request(user=other_user)
+        requests = GameRequest.objects.filter(user=self.user)
+        serialized_requests = GameRequestSerializer(requests, many=True)
+        res = self.client.get(REQ_URL)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        for req, res_req in zip(serialized_requests.data, res.data):
+            for key, val in req.items():
+                if key == "feedback":
+                    continue
+                self.assertEqual(res_req[key], val)
+
+    def test_get_game_request(self):
+        request = create_game_request(user=self.user)
+        serialized_request = GameRequestSerializer(request)
+        res = self.client.get(req_url(request.id))
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        for key, val in serialized_request.data.items():
+            if key == "feedback":
+                continue
+            self.assertEqual(res.data[key], val)
+
+    def test_get_other_users_game_request(self):
+        other_user = create_user(username="diff", email="diff@example.com")
+        request = create_game_request(user=other_user)
+        serialized_request = GameRequestSerializer(request)
+        res = self.client.get(req_url(request.id))
+
+        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertNotEqual(res.data, serialized_request.data)
+
+    def test_create_game_request(self):
+        payload = {
+            "title": "Example title",
+            "developer": "Example developer",
+            "duration": 40,
+            "release_date": date(2020, 5, 5),
+            "in_early_access": False,
+            "has_multiplayer": True,
+        }
+        res = self.client.post(REQ_URL, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(exists(req=True, title=payload["title"]))
+
+    def test_update_game_request(self):
+        request = create_game_request(user=self.user)
+        payload = {
+            "title": "Updated title",
+            "developer": "Updated developer",
+            "duration": 90,
+            "release_date": date(2010, 2, 6),
+            "in_early_access": True,
+            "has_multiplayer": True,
+        }
+        res = self.client.put(req_url(request.id), payload)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        request.refresh_from_db()
+        for key, val in payload.items():
+            self.assertEqual(getattr(request, key), val)
+
+    def test_update_rejected_game_request(self):
+        request = create_game_request(user=self.user, rejected=True)
+        payload = {
+            "title": "Updated title",
+            "developer": "Updated developer",
+            "duration": 90,
+            "release_date": date(2010, 2, 6),
+            "in_early_access": True,
+            "has_multiplayer": True,
+        }
+        res = self.client.put(req_url(request.id), payload)
+
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+        request.refresh_from_db()
+        for key, val in payload.items():
+            self.assertNotEqual(getattr(request, key), val)
+
+    def test_partial_update_game_request(self):
+        request = create_game_request(user=self.user)
+        payload = {"developer": "Updated developer"}
+        res = self.client.patch(req_url(request.id), payload)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        request.refresh_from_db()
+        self.assertEqual(request.developer, payload["developer"])
+
+    def test_partial_update_rejected_game_request(self):
+        request = create_game_request(user=self.user, rejected=True)
+        request.refresh_from_db()
+        payload = {"developer": "Updated developer"}
+        res = self.client.patch(req_url(request.id), payload)
+
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+        request.refresh_from_db()
+        self.assertNotEqual(request.developer, payload["developer"])
+
+    def test_delete_game_request(self):
+        request = create_game_request(user=self.user)
+        res = self.client.delete(req_url(request.id))
+
+        self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(exists(req=True, id=request.id))
+
+
+class SuperUserGameRequestApiTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.superuser = create_superuser()
+        self.user = create_user()
+        self.client.force_authenticate(self.superuser)
+
+    def test_get_all_game_requests(self):
+        create_game_request(user=self.user)
+        other_user = create_user(username="diff", email="diff@example.com")
+        create_game_request(user=other_user)
+        requests = GameRequest.objects.all()
+        serialized_requests = GameRequestSerializer(requests, many=True)
+        res = self.client.get(REQ_URL)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data, serialized_requests.data)
+
+    def test_get_other_users_game_request(self):
+        request = create_game_request(user=self.user)
+        res = self.client.get(req_url(request.id))
+        serialized_request = GameRequestSerializer(request)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data, serialized_request.data)
+
+    def test_approve_game_request(self):
+        request = create_game_request(user=self.user)
+        url = f"/api/game/game-requests/{request.id}/approve/"
+        res = self.client.post(url)
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(exists(title=request.title))
+        self.assertFalse(exists(req=True, id=request.id))
+
+    def test_reject_game_request(self):
+        request = create_game_request(user=self.user)
+        url = f"/api/game/game-requests/{request.id}/reject/"
+        payload = {"feedback": "Example feedback"}
+        res = self.client.post(url, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertFalse(exists(title=request.title))
+        request.refresh_from_db()
+        self.assertTrue(request.rejected)
+        self.assertEqual(request.feedback, payload["feedback"])
