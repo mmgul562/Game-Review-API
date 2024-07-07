@@ -76,9 +76,25 @@ class GameRequest(models.Model):
     in_early_access = models.BooleanField(default=False)
     has_multiplayer = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
-    rejected = models.BooleanField(default=False)
-    # only used when request is rejected
-    feedback = models.TextField(max_length=1023, null=True, blank=True)
+    rejected = models.BooleanField(
+        default=False,
+        help_text="Current status of the request."
+    )
+    rejections = models.PositiveSmallIntegerField(
+        default=0,
+        help_text="Number of rejections."
+    )
+    # only used when request was rejected
+    rejected_at = models.DateTimeField(
+        null=True,
+        help_text="Date of the last rejection."
+    )
+    feedback = models.TextField(
+        max_length=1023,
+        null=True,
+        blank=True,
+        help_text="Feedback regarding the reason(s) of last rejection."
+    )
 
     def __str__(self):
         return f"{self.title} request by {self.user}"

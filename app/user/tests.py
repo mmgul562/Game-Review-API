@@ -84,7 +84,10 @@ class PublicUserApiTests(TestCase):
             "identifier": "example",
             "password": "example123"
         }
-        create_user(username=payload["identifier"], password=payload["password"])
+        create_user(
+            username=payload["identifier"],
+            password=payload["password"]
+        )
         res = self.client.post(TOKEN_URL, payload)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)

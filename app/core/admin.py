@@ -49,25 +49,21 @@ class GameRequestAdmin(admin.ModelAdmin):
     list_display = ['title', 'user', 'created_at']
     fieldsets = (
         (None, {'fields': (
-            'user', 'created_at', 'rejected', 'feedback'
+            'user', 'created_at', 'rejected',
+            'rejected_at', 'feedback', 'rejections'
         )}),
         (_('Game Information'), {'fields': (
             'title', 'developer', 'release_date', 'duration',
             'in_early_access', 'has_multiplayer'
         )})
     )
-    readonly_fields = ['created_at']
-    add_fieldsets = (
-        (None, {'fields': (
-            'user',
-            'title',
-            'developer',
-            'release_date',
-            'duration',
-            'in_early_access',
-            'has_multiplayer'
-        ), }),
-    )
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj is None:
+            return ['created_at', 'rejected', 'rejected_at',
+                    'feedback', 'rejections']
+        elif request.path.endswith('/change/'):
+            return ['created_at']
 
 
 class ReviewAdmin(admin.ModelAdmin):

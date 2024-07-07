@@ -1,6 +1,7 @@
 from datetime import date
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APIClient
 
@@ -30,6 +31,8 @@ def create_game_request(user,
                         in_early_access=False,
                         has_multiplayer=False,
                         rejected=False,
+                        rejections=0,
+                        rejected_at=None,
                         feedback=None):
     return GameRequest.objects.create(
         user=user,
@@ -40,6 +43,8 @@ def create_game_request(user,
         in_early_access=in_early_access,
         has_multiplayer=has_multiplayer,
         rejected=rejected,
+        rejections=rejections,
+        rejected_at=rejected_at,
         feedback=feedback
     )
 
@@ -324,7 +329,7 @@ class PrivateGameRequestApiTests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         for req, res_req in zip(serialized_requests.data, res.data):
             for key, val in req.items():
-                if key == "feedback":
+                if key in ["feedback", "rejected_at", "rejections"]:
                     continue
                 self.assertEqual(res_req[key], val)
 
@@ -335,7 +340,7 @@ class PrivateGameRequestApiTests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         for key, val in serialized_request.data.items():
-            if key == "feedback":
+            if key in ["feedback", "rejected_at", "rejections"]:
                 continue
             self.assertEqual(res.data[key], val)
 
@@ -380,7 +385,8 @@ class PrivateGameRequestApiTests(TestCase):
             self.assertEqual(getattr(request, key), val)
 
     def test_update_rejected_game_request(self):
-        request = create_game_request(user=self.user, rejected=True)
+        request = create_game_request(user=self.user, rejected=True,
+                                      rejected_at=timezone.now(), rejections=3)
         payload = {
             "title": "Updated title",
             "developer": "Updated developer",
@@ -391,10 +397,21 @@ class PrivateGameRequestApiTests(TestCase):
         }
         res = self.client.put(req_url(request.id), payload)
 
-        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
         request.refresh_from_db()
+        self.assertFalse(request.rejected)
         for key, val in payload.items():
-            self.assertNotEqual(getattr(request, key), val)
+            self.assertEqual(getattr(request, key), val)
+
+    def test_update_rejected_game_request_with_error_400(self):
+        request = create_game_request(user=self.user, rejected=True,
+                                      rejected_at=timezone.now(), rejections=3)
+        payload = {"title": "Updated title"}
+        res = self.client.put(req_url(request.id), payload)
+
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        request.refresh_from_db()
+        self.assertTrue(request.rejected)
 
     def test_partial_update_game_request(self):
         request = create_game_request(user=self.user)
@@ -406,14 +423,15 @@ class PrivateGameRequestApiTests(TestCase):
         self.assertEqual(request.developer, payload["developer"])
 
     def test_partial_update_rejected_game_request(self):
-        request = create_game_request(user=self.user, rejected=True)
-        request.refresh_from_db()
+        request = create_game_request(user=self.user, rejected=True,
+                                      rejected_at=timezone.now(), rejections=2)
         payload = {"developer": "Updated developer"}
         res = self.client.patch(req_url(request.id), payload)
 
-        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
         request.refresh_from_db()
-        self.assertNotEqual(request.developer, payload["developer"])
+        self.assertFalse(request.rejected)
+        self.assertEqual(request.developer, payload["developer"])
 
     def test_delete_game_request(self):
         request = create_game_request(user=self.user)
@@ -468,4 +486,34 @@ class SuperUserGameRequestApiTests(TestCase):
         self.assertFalse(exists(title=request.title))
         request.refresh_from_db()
         self.assertTrue(request.rejected)
+        self.assertEqual(request.rejections, 1)
+        self.assertIsNotNone(request.rejected_at)
         self.assertEqual(request.feedback, payload["feedback"])
+
+    def test_reject_previously_rejected_game_request(self):
+        rejected_at = timezone.now()
+        request = create_game_request(user=self.user, rejected=False,
+                                      rejections=2, rejected_at=rejected_at)
+        url = f"/api/game/game-requests/{request.id}/reject/"
+        payload = {"feedback": "Example feedback"}
+        res = self.client.post(url, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        request.refresh_from_db()
+        self.assertTrue(request.rejected)
+        self.assertNotEqual(request.rejected_at, rejected_at)
+        self.assertEqual(request.rejections, 3)
+
+    def test_reject_currently_rejected_game_request(self):
+        rejected_at = timezone.now()
+        request = create_game_request(user=self.user, rejected=True,
+                                      rejections=1, rejected_at=rejected_at)
+        url = f"/api/game/game-requests/{request.id}/reject/"
+        payload = {"feedback": "Example feedback"}
+        res = self.client.post(url, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        request.refresh_from_db()
+        self.assertEqual(request.rejections, 1)
+        self.assertEqual(request.rejected_at, rejected_at)
+        self.assertNotEqual(request.feedback, payload["feedback"])

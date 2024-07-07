@@ -5,6 +5,7 @@ from rest_framework import (viewsets,
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.decorators import action
+from django.utils import timezone
 
 from core.models import Game, GameRequest
 from game.permissions import IsSuperUser
@@ -55,20 +56,6 @@ class GameRequestViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
-    def update(self, request, *args, **kwargs):
-        game_request = self.get_object()
-        if game_request.rejected:
-            return Response({'detail': 'You cannot update a rejected game request.'},
-                            status=status.HTTP_403_FORBIDDEN)
-        return super().update(request, *args, **kwargs)
-
-    def partial_update(self, request, *args, **kwargs):
-        game_request = self.get_object()
-        if game_request.rejected:
-            return Response({'detail': 'You cannot update a rejected game request.'},
-                            status=status.HTTP_403_FORBIDDEN)
-        return super().partial_update(request, *args, **kwargs)
-
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
         game_request = self.get_object()
@@ -88,11 +75,18 @@ class GameRequestViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def reject(self, request, pk=None):
         game_request = self.get_object()
+        if game_request.rejected:
+            return Response(
+                {'detail': 'This game request is already rejected.'},
+                status.HTTP_405_METHOD_NOT_ALLOWED
+            )
         feedback = request.data.get('feedback', '')
 
         game_request.rejected = True
+        game_request.rejections += 1
         game_request.feedback = feedback
+        game_request.rejected_at = timezone.now()
         game_request.save()
 
         return Response({'status': 'rejected',
-                         'feedback': feedback}, status=status.HTTP_200_OK)
+                        'feedback': feedback}, status=status.HTTP_200_OK)

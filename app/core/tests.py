@@ -109,6 +109,9 @@ class ModelTests(TestCase):
         self.assertEqual(game_req.release_date, date(2000, 1, 1))
         self.assertFalse(game_req.in_early_access)
         self.assertFalse(game_req.has_multiplayer)
+        self.assertFalse(game_req.rejected)
+        self.assertIsNone(game_req.rejected_at)
+        self.assertEqual(game_req.rejections, 0)
 
     def test_create_review_successful(self):
         review = models.Review.objects.create(

@@ -27,8 +27,10 @@ class GameRequestSerializer(serializers.ModelSerializer):
         model = GameRequest
         fields = ['id', 'title', 'developer', 'duration',
                   'release_date', 'in_early_access', 'has_multiplayer',
-                  'created_at', 'rejected', 'feedback']
-        read_only_fields = ['id', 'created_at', 'rejected', 'feedback']
+                  'created_at', 'rejected', 'rejected_at',
+                  'rejections', 'feedback']
+        read_only_fields = ['id', 'created_at', 'rejected',
+                            'rejected_at', 'rejections', 'feedback']
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
@@ -36,7 +38,13 @@ class GameRequestSerializer(serializers.ModelSerializer):
         user = request.user if request else None
 
         if user and not user.is_superuser:
-            if not instance.rejected:
+            if instance.rejections == 0:
                 representation.pop('feedback', None)
+                representation.pop('rejected_at', None)
+                representation.pop('rejections', None)
 
         return representation
+
+    def update(self, instance, validated_data):
+        instance.rejected = False
+        return super().update(instance, validated_data)
