@@ -20,11 +20,11 @@ services:
   db:
     image: postgres:13-alpine
     volumes:
-      - dev-pg-db:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=${DB_NAME}
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWD}
 
 volumes:
-  dev-pg-db:
+  postgres_data:
