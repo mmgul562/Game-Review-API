@@ -1,10 +1,16 @@
-.idea/
+# Project
+.idea
+.env
+.env.example
 
+# Git
 .git
 .gitignore
 
+# Docker
 .docker
 
+# Python
 app/__pycache__/
 app/*/__pycache__/
 app/*/*/__pycache__/

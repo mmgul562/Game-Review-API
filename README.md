@@ -54,12 +54,12 @@ docker-compose up --build
 
 ### Reviews
 
-- `GET /api/review/reviews/`: List all reviews.
-- `POST /api/review/reviews/`: Create a new review.
-- `GET /api/review/reviews/{id}/`: Retrieve a specific review.
-- `PUT /api/review/reviews/{id}/`: Update a review.
-- `PATCH /api/review/reviews/{id}/`: Partially update a review.
-- `DELETE /api/review/reviews/{id}/`: Delete a review.
+- `GET /api/review/reviews/`: List all reviews
+- `POST /api/review/reviews/`: Create a new review
+- `GET /api/review/reviews/{id}/`: Retrieve a specific review
+- `PUT /api/review/reviews/{id}/`: Update a review
+- `PATCH /api/review/reviews/{id}/`: Partially update a review
+- `DELETE /api/review/reviews/{id}/`: Delete a review
 
 ## Documentation
 
