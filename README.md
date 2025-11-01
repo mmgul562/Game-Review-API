@@ -63,12 +63,15 @@ docker-compose up --build
 
 ## Documentation
 
-The API documentation is available at the `/api/docs/` endpoint, which provides a Swagger UI for testing the API.
+The full API documentation is available at the `/api/docs/` endpoint, which provides a Swagger UI for testing the API.
 
-## License Information
+## License & Package Information
 
 This project uses the following 3rd party libraries:
-- [Django REST Framework (BSD 3-Clause)](https://opensource.org/licenses/BSD-3-Clause)
-- [Psycopg2 (GNU LGPL 3.0)](https://www.gnu.org/licenses/lgpl-3.0.html)
-- [DRF Spectacular (BSD 3-Clause)](https://opensource.org/licenses/BSD-3-Clause)
-- [Flake8 (MIT)](https://opensource.org/licenses/MIT)
+| Package                          | Version          | License                                                                 |
+|----------------------------------|------------------|-------------------------------------------------------------------------|
+| Django                           | >=4.0.1,<4.1     | [BSD 3-Clause License](https://opensource.org/licenses/BSD-3-Clause)<grok-card data-id="00a6de" data-type="citation_card"></grok-card>    |
+| djangorestframework              | >=3.13.1,<3.14   | [BSD License](https://opensource.org/licenses/BSD-3-Clause)<grok-card data-id="b83df4" data-type="citation_card"></grok-card>             |
+| psycopg2                         | >=2.9.3,<2.10    | [GNU Lesser General Public License (LGPL) v3 or later (with exceptions)](https://opensource.org/licenses/LGPL-3.0)<grok-card data-id="968ff0" data-type="citation_card"></grok-card> |
+| drf-spectacular                  | >=0.22.1,<0.23   | [BSD 3-Clause License](https://opensource.org/licenses/BSD-3-Clause)<grok-card data-id="381d76" data-type="citation_card"></grok-card>    |
+| flake8                           | >=4.0.1,<4.1     | [MIT License](https://opensource.org/licenses/MIT)<grok-card data-id="7c1e13" data-type="citation_card"></grok-card>                      |
